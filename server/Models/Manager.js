@@ -81,6 +81,7 @@ const managerSchema = new mongoose.Schema({
     },
     year_of_issue: {
         type: Number,
+        
         required: true
     },
     photoUrl: {

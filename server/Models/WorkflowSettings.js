@@ -1,29 +1,63 @@
 import mongoose from "mongoose";
 
-const workflowSettingsSchema = new mongoose.Schema({
+const workflowSettingsSchema = new mongoose.Schema(
+  {
     type: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
+      unique: true,
     },
-    steps: [{
+    workflowType: {
+      type: String,
+      enum: ["chain", "group"],
+      default: "chain",
+    },
+    steps: [
+      {
         sequence_value: {
-            type: Number,
-            required: true
+          type: Number,
+          required: true,
         },
         role: {
-            type: String,
-            required: true
+          type: String,
+          required: true,
         },
         approverId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Manager',  // it should matche the model name
-            required: true
-        }
-    }]
-},{
-    timestamps: true
-}
-
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+      },
+    ],
+    handlerGroup: [
+      {
+        handlerId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        handlerName: {
+          type: String,
+          required: true,
+        },
+        handlerRole: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+    roundRobinIndex: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+  },
 );
 
-export const WorkflowSettings = mongoose.model("WorkflowSettings", workflowSettingsSchema, "workflowSettings");
+export const WorkflowSettings = mongoose.model(
+  "WorkflowSettings",
+  workflowSettingsSchema,
+  "workflowSettings",
+);

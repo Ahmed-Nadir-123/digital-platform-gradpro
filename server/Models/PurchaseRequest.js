@@ -1,85 +1,102 @@
 import mongoose from "mongoose";
 
-const purchaseRequestSchema = new mongoose.Schema({
+const purchaseRequestSchema = new mongoose.Schema(
+  {
     requestId: {
-        type: String,
-        required: true,
-        unique: true
+      type: String,
+      required: true,
+      unique: true,
     },
     requesterId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ItStaff',
-        required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     itemName: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     quantity: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     urgency: {
-        type: String,
-        required: true,
-        enum: ['Low', 'Medium', 'High']
+      type: String,
+      required: true,
+      enum: ["Low", "Medium", "High"],
     },
     estimatedBudget: {
-        type: String,
-        default: ""
+      type: String,
+      default: "",
     },
     justification: {
-        type: String,
-        default: ""
+      type: String,
+      default: "",
     },
     expectedDeliveryDate: {
-        type: Date,
-        default: null
+      type: Date,
+      default: null,
     },
     additionalNotes: {
-        type: String,
-        default: ""
+      type: String,
+      default: "",
+    },
+    requestCategory: {
+      type: String,
+      enum: ["Purchase", "Software"],
+      default: "Purchase",
+    },
+    assignedHandler: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     status: {
-        type: String,
-        enum: ['Pending', 'Approved', 'Rejected'],
-        default: 'Pending'
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
     },
     currentStep: {
-        type: Number,
-        default: 1
+      type: Number,
+      default: 1,
     },
-    approvalFlow: [{
+    approvalFlow: [
+      {
         approverId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Manager',
-            required: true
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
         },
         role: {
-            type: String,
-            required: true
+          type: String,
+          required: true,
         },
         action: {
-            type: String,
-            enum: ['Pending', 'Approved', 'Rejected'],
-            default: 'Pending'
+          type: String,
+          enum: ["Pending", "Approved", "Rejected"],
+          default: "Pending",
         },
         comment: {
-            type: String,
-            default: ""
+          type: String,
+          default: "",
         },
         timestamp: {
-            type: Date
+          type: Date,
         },
         currentApprover: {
-            type: String,
-            required: true
-        }
-    }]
-},
-{
-    timestamps: true
-}
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  },
 );
 
-export const PurchaseRequest = mongoose.model("PurchaseRequest", purchaseRequestSchema, "purchaseRequests");
+export const PurchaseRequest = mongoose.model(
+  "PurchaseRequest",
+  purchaseRequestSchema,
+  "purchaseRequests",
+);
