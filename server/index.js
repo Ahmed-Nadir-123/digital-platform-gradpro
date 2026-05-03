@@ -331,8 +331,8 @@ async function generateRequestId() {
 
 app.post("/purchaseRequests", async (req, res) => {
   try {
+    const requesterId = req.user._id;
     const {
-      requesterId,
       itemName,
       quantity,
       urgency,
@@ -342,13 +342,8 @@ app.post("/purchaseRequests", async (req, res) => {
       requestCategory,
     } = req.body;
 
-    if (!requesterId || !itemName || !quantity || !urgency) {
+    if (!itemName || !quantity || !urgency) {
       return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    const requester = await User.findById(requesterId);
-    if (!requester) {
-      return res.status(404).json({ message: "Requester not found." });
     }
 
     const requestId = await generateRequestId();
@@ -374,7 +369,7 @@ app.post("/purchaseRequests", async (req, res) => {
       "✅ Purchase request created:",
       purchaseRequest.requestId,
       "by",
-      requester.personal_name,
+      requesterId,
     );
 
     res.status(201).json({
@@ -430,28 +425,12 @@ app.post(
   uploadPrinting.single("document"),
   async (req, res) => {
     try {
-      const {
-        requesterId,
-        documentType,
-        orientation,
-        stapling,
-        numPages,
-        numSets,
-        notes,
-      } = req.body;
-      if (
-        !requesterId ||
-        !documentType ||
-        !orientation ||
-        !stapling ||
-        !numPages ||
-        !numSets
-      ) {
+      const requesterId = req.user._id;
+      const { documentType, orientation, stapling, numPages, numSets, notes } =
+        req.body;
+      if (!documentType || !orientation || !stapling || !numPages || !numSets) {
         return res.status(400).json({ message: "Missing required fields." });
       }
-      const requester = await User.findById(requesterId);
-      if (!requester)
-        return res.status(404).json({ message: "Requester not found." });
 
       const fileUrl = req.file ? `uploads/printing/${req.file.filename}` : "";
       const requestId = `PRN${Date.now()}`;
@@ -487,8 +466,8 @@ app.post("/printingRequests/:requestId/approve", (req, res) =>
 // ── Transport Requests ──────────────────────────────────────────────────
 app.post("/transportRequests", async (req, res) => {
   try {
+    const requesterId = req.user._id;
     const {
-      requesterId,
       destination,
       departureDate,
       returnDate,
@@ -498,19 +477,8 @@ app.post("/transportRequests", async (req, res) => {
       additionalNotes,
     } = req.body;
 
-    if (
-      !requesterId ||
-      !destination ||
-      !departureDate ||
-      !numberOfPassengers ||
-      !purpose
-    ) {
+    if (!destination || !departureDate || !numberOfPassengers || !purpose) {
       return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    const requester = await User.findById(requesterId);
-    if (!requester) {
-      return res.status(404).json({ message: "Requester not found." });
     }
 
     const requestId = `TRN${Date.now()}`;
@@ -529,12 +497,7 @@ app.post("/transportRequests", async (req, res) => {
     await transportRequest.save();
     await applyWorkflow("TransportRequest", transportRequest);
 
-    console.log(
-      "✅ Transport request created:",
-      requestId,
-      "by",
-      requester.personal_name,
-    );
+    console.log("✅ Transport request created:", requestId, "by", requesterId);
     res.status(201).json({
       message: "Transport request submitted successfully.",
       requestId,
@@ -553,8 +516,8 @@ app.post("/transportRequests/:requestId/approve", (req, res) =>
 // ── Food Requests ───────────────────────────────────────────────────────
 app.post("/foodRequests", async (req, res) => {
   try {
+    const requesterId = req.user._id;
     const {
-      requesterId,
       occasionName,
       eventDate,
       numberOfPersons,
@@ -566,7 +529,6 @@ app.post("/foodRequests", async (req, res) => {
     } = req.body;
 
     if (
-      !requesterId ||
       !occasionName ||
       !eventDate ||
       !numberOfPersons ||
@@ -574,11 +536,6 @@ app.post("/foodRequests", async (req, res) => {
       !location
     ) {
       return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    const requester = await User.findById(requesterId);
-    if (!requester) {
-      return res.status(404).json({ message: "Requester not found." });
     }
 
     const requestId = `FOOD${Date.now()}`;
@@ -598,12 +555,7 @@ app.post("/foodRequests", async (req, res) => {
     await foodRequest.save();
     await applyWorkflow("FoodRequest", foodRequest);
 
-    console.log(
-      "✅ Food request created:",
-      requestId,
-      "by",
-      requester.personal_name,
-    );
+    console.log("✅ Food request created:", requestId, "by", requesterId);
     res
       .status(201)
       .json({ message: "Food request submitted successfully.", requestId });
@@ -621,8 +573,8 @@ app.post("/foodRequests/:requestId/approve", (req, res) =>
 // ── Fund Requests ───────────────────────────────────────────────────────
 app.post("/fundRequests", async (req, res) => {
   try {
+    const requesterId = req.user._id;
     const {
-      requesterId,
       purposeTitle,
       amountRequested,
       currency,
@@ -632,13 +584,8 @@ app.post("/fundRequests", async (req, res) => {
       additionalNotes,
     } = req.body;
 
-    if (!requesterId || !purposeTitle || !amountRequested || !justification) {
+    if (!purposeTitle || !amountRequested || !justification) {
       return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    const requester = await User.findById(requesterId);
-    if (!requester) {
-      return res.status(404).json({ message: "Requester not found." });
     }
 
     const requestId = `FUND${Date.now()}`;
@@ -659,12 +606,7 @@ app.post("/fundRequests", async (req, res) => {
     await fundRequest.save();
     await applyWorkflow("FundRequest", fundRequest);
 
-    console.log(
-      "✅ Fund request created:",
-      requestId,
-      "by",
-      requester.personal_name,
-    );
+    console.log("✅ Fund request created:", requestId, "by", requesterId);
     res
       .status(201)
       .json({ message: "Fund request submitted successfully.", requestId });
@@ -820,20 +762,12 @@ app.get("/requests/pending/:userId", async (req, res) => {
 // ── Risk Reports ────────────────────────────────────────────────────────
 app.post("/riskReports", async (req, res) => {
   try {
-    const {
-      requesterId,
-      location,
-      riskType,
-      urgency,
-      description,
-      actionRequested,
-    } = req.body;
-    if (!requesterId || !location || !riskType || !description) {
+    const requesterId = req.user._id;
+    const { location, riskType, urgency, description, actionRequested } =
+      req.body;
+    if (!location || !riskType || !description) {
       return res.status(400).json({ message: "Missing required fields." });
     }
-    const requester = await User.findById(requesterId);
-    if (!requester)
-      return res.status(404).json({ message: "Requester not found." });
 
     const requestId = `RISK${Date.now()}`;
     const report = new RiskReport({
