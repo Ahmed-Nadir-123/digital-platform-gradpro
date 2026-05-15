@@ -22,6 +22,7 @@ import {
   Wallet,
   Printer,
   AlertTriangle,
+  Monitor,
   ArrowRight,
   Loader2,
   RefreshCw,
@@ -29,7 +30,6 @@ import {
   AlertCircle,
   ChevronUp,
   ChevronDown,
-  Search,
   RotateCcw,
   Zap,
 } from "lucide-react";
@@ -56,13 +56,13 @@ const WF_T = {
     wfConfigureBtn: "Configure",
     wfEditBtn: "Edit Flow",
     wfTypeNames: {
-      PurchaseRequest: "Purchase Request",
-      TransportRequest: "Transport Request",
-      FoodRequest: "Food / Catering",
-      FundRequest: "Fund Request",
-      MaintenanceRequest: undefined,
-      PrintingRequest: "Printing Request",
-      RiskReport: "Risk Report",
+      purchase: "Purchase Request",
+      transportation: "Transport Request",
+      food: "Food / Catering",
+      fund: "Fund Request",
+      install_software: "Software Installation",
+      printing: "Printing Request",
+      risk_report: "Risk Report",
     },
     wfModalTitle: "Configure Workflow",
     wfModalDesc: "Define the approval routing for this request type.",
@@ -92,6 +92,11 @@ const WF_T = {
     wfEmptyHint: "Click to configure the approval flow for this request type.",
     wfRoundRobinNote:
       "Requests are assigned to one handler at a time, cycling through the pool.",
+    wfSelectUserHint: "Select to pin a specific person (optional)",
+    wfPinned: "Pinned",
+    wfAutoRole: "Auto by role",
+    wfRolePlaceholder: "Role (e.g. hod, avc, finance)",
+    wfUserPinLabel: "Pin to person (optional)",
   },
   ar: {
     pageTitle: "توجيه الطلبات",
@@ -110,13 +115,13 @@ const WF_T = {
     wfConfigureBtn: "إعداد",
     wfEditBtn: "تعديل المسار",
     wfTypeNames: {
-      PurchaseRequest: "طلب شراء",
-      TransportRequest: "طلب نقل",
-      FoodRequest: "طلب طعام / تقديم",
-      FundRequest: "طلب تمويل",
-      MaintenanceRequest: undefined,
-      PrintingRequest: "طلب طباعة",
-      RiskReport: "تقرير مخاطر",
+      purchase: "طلب شراء",
+      transportation: "طلب نقل",
+      food: "طلب طعام / تقديم",
+      fund: "طلب تمويل",
+      install_software: "تثبيت برنامج",
+      printing: "طلب طباعة",
+      risk_report: "تقرير مخاطر",
     },
     wfModalTitle: "إعداد مسار العمل",
     wfModalDesc: "حدد مسار الموافقة لهذا النوع من الطلبات.",
@@ -146,13 +151,19 @@ const WF_T = {
     wfEmptyHint: "اضغط لإعداد مسار الموافقة لهذا النوع من الطلبات.",
     wfRoundRobinNote:
       "تُسند الطلبات لمعالج واحد في كل مرة، مع التنقل بين المجموعة.",
+    wfSelectUserHint: "اختر لتثبيت شخص معين (اختياري)",
+    wfPinned: "مثبّت",
+    wfAutoRole: "تلقائي حسب الدور",
+    wfRolePlaceholder: "الدور (مثال: hod, avc, finance)",
+    wfUserPinLabel: "تثبيت لشخص (اختياري)",
   },
 };
 
 // ─── Type meta ────────────────────────────────────────────────────────────────
+// Keys match requestType values stored in WorkflowSettings collection
 const TYPE_META = [
   {
-    type: "PurchaseRequest",
+    type: "purchase",
     icon: <ShoppingCart className="h-5 w-5" />,
     color: "text-blue-600",
     bg: "bg-blue-50",
@@ -164,7 +175,7 @@ const TYPE_META = [
     badgeClass: "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100",
   },
   {
-    type: "TransportRequest",
+    type: "transportation",
     icon: <Truck className="h-5 w-5" />,
     color: "text-emerald-600",
     bg: "bg-emerald-50",
@@ -177,7 +188,7 @@ const TYPE_META = [
       "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
   },
   {
-    type: "FoodRequest",
+    type: "food",
     icon: <UtensilsCrossed className="h-5 w-5" />,
     color: "text-orange-600",
     bg: "bg-orange-50",
@@ -190,7 +201,7 @@ const TYPE_META = [
       "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100",
   },
   {
-    type: "FundRequest",
+    type: "fund",
     icon: <Wallet className="h-5 w-5" />,
     color: "text-violet-600",
     bg: "bg-violet-50",
@@ -203,7 +214,19 @@ const TYPE_META = [
       "bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-100",
   },
   {
-    type: "PrintingRequest",
+    type: "install_software",
+    icon: <Monitor className="h-5 w-5" />,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    accentColor: "#4f46e5",
+    chipBg: "bg-indigo-100",
+    chipText: "text-indigo-700",
+    previewBg: "bg-indigo-50",
+    previewBorder: "border-indigo-100",
+    badgeClass: "bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-100",
+  },
+  {
+    type: "printing",
     icon: <Printer className="h-5 w-5" />,
     color: "text-cyan-600",
     bg: "bg-cyan-50",
@@ -215,7 +238,7 @@ const TYPE_META = [
     badgeClass: "bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-100",
   },
   {
-    type: "RiskReport",
+    type: "risk_report",
     icon: <AlertTriangle className="h-5 w-5" />,
     color: "text-red-600",
     bg: "bg-red-50",
@@ -227,6 +250,9 @@ const TYPE_META = [
     badgeClass: "bg-red-100 text-red-700 border-red-200 hover:bg-red-100",
   },
 ];
+
+// Request types that only support a single approval step
+const SINGLE_LEVEL_TYPES = ["printing", "install_software", "risk_report"];
 
 // ─── WorkflowConfigModal ───────────────────────────────────────────────────────
 function WorkflowConfigModal({
@@ -242,46 +268,28 @@ function WorkflowConfigModal({
 
   const [mode, setMode] = useState("chain");
   const [steps, setSteps] = useState([]);
-  const [handlers, setHandlers] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [userSearch, setUserSearch] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const isSingleLevel = SINGLE_LEVEL_TYPES.includes(requestType);
 
   useEffect(() => {
     if (!open) return;
-    setMode(initialConfig?.workflowType || "chain");
-    setSteps(
-      (initialConfig?.approvalLevels || initialConfig?.steps || []).map((s, i) => ({
-        id: i,
-        userId: s.approverId?._id || s.approverId || "",
-        role: s.role || "",
-      })),
-    );
-    setHandlers(
-      (initialConfig?.handlerGroup || initialConfig?.assignmentRules || []).map((h, i) => ({
-        id: i,
-        userId: h.handlerId?._id || h.handlerId || "",
-        handlerName: h.handlerName || "",
-        handlerRole: h.handlerRole || "",
-      })),
-    );
-    setSelectedUserId("");
-    setUserSearch("");
-  }, [open, initialConfig]);
-
-  const filteredUsers = useMemo(() => {
-    if (!userSearch.trim()) return users;
-    const q = userSearch.toLowerCase();
-    return users.filter(
-      (u) =>
-        u.personal_name?.toLowerCase().includes(q) ||
-        u.role?.toLowerCase().includes(q),
-    );
-  }, [users, userSearch]);
+    setMode("chain");
+    const loaded = (initialConfig?.approvalLevels || initialConfig?.steps || []).map((s, i) => ({
+      id: i,
+      userId: s.approverId?._id || s.approverId || "",
+      role: s.roleName || s.role || "",
+    }));
+    setSteps(isSingleLevel ? loaded.slice(0, 1) : loaded);
+  }, [open, initialConfig, isSingleLevel]);
 
   // Step operations
-  const addStep = () =>
-    setSteps((prev) => [...prev, { id: Date.now(), userId: "", role: "" }]);
+  const addStep = () => {
+    setSteps((prev) => {
+      if (isSingleLevel && prev.length >= 1) return prev;
+      return [...prev, { id: Date.now(), userId: "", role: "" }];
+    });
+  };
   const removeStep = (id) =>
     setSteps((prev) => prev.filter((s) => s.id !== id));
   const updateStep = (id, key, value) =>
@@ -289,9 +297,12 @@ function WorkflowConfigModal({
       prev.map((s) => {
         if (s.id !== id) return s;
         const next = { ...s, [key]: value };
-        if (key === "userId") {
+        // When a user is selected, auto-fill role only if role is still empty
+        if (key === "userId" && value) {
           const u = users.find((u) => u._id === value);
-          next.role = u?.role || "";
+          if (!s.role && u) {
+            next.role = u?.roles?.[0] || u?.role || "";
+          }
         }
         return next;
       }),
@@ -304,47 +315,25 @@ function WorkflowConfigModal({
     setSteps(arr);
   };
 
-  // Handler operations
-  const addHandler = () => {
-    if (!selectedUserId) return;
-    const u = users.find((u) => u._id === selectedUserId);
-    if (!u || handlers.some((h) => h.userId === selectedUserId)) return;
-    setHandlers((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        userId: u._id,
-        handlerName: u.personal_name,
-        handlerRole: u.role,
-      },
-    ]);
-    setSelectedUserId("");
-    setUserSearch("");
-  };
-  const removeHandler = (id) =>
-    setHandlers((prev) => prev.filter((h) => h.id !== id));
-
   const handleSave = async () => {
     setSaving(true);
-    const approvalLevels =
-      mode === "group"
-        ? handlers.map((h, i) => ({
-            level: i + 1,
-            roleName: h.handlerRole || h.role || "it_staff",
-            isRequired: true,
-            departmentScope: "",
-          }))
-        : steps.map((s, i) => ({
-            level: i + 1,
-            roleName: s.role || "",
-            isRequired: true,
-            departmentScope: "",
-          }));
+    // Hard-cap: single-level types must never save more than 1 step
+    const effectiveSteps = isSingleLevel ? steps.slice(0, 1) : steps;
+    const approvalLevels = effectiveSteps.map((s, i) => ({
+      level: i + 1,
+      roleName: s.role || "",
+      approverId: s.userId || null,
+      isRequired: true,
+      departmentScope: "",
+    }));
     const config = {
+      ...(initialConfig?._id ? { _id: initialConfig._id } : {}),
       workflowName: initialConfig?.workflowName || `${requestType} Workflow`,
       requestType,
       isActive: true,
+      workflowType: "chain",
       approvalLevels,
+      handlerGroup: [],
     };
     const ok = await onSave(requestType, config);
     setSaving(false);
@@ -358,8 +347,7 @@ function WorkflowConfigModal({
 
   const typeMeta = TYPE_META.find((m) => m.type === requestType);
   const typeName = t("wfTypeNames")?.[requestType] || requestType;
-  const hasPreview =
-    mode === "chain" ? steps.some((s) => s.userId) : handlers.length > 0;
+  const hasPreview = steps.some((s) => s.role);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -388,60 +376,9 @@ function WorkflowConfigModal({
         </DialogHeader>
 
         <div className="space-y-5 mt-3">
-          {/* ── Mode toggle (segmented control) */}
-          <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-border bg-muted/40 p-1.5">
-            {[
-              {
-                value: "chain",
-                label: t("wfModeChain"),
-                icon: <GitBranch className="h-4 w-4" />,
-                desc: t("wfModeChainDesc"),
-                count: `${steps.length}`,
-              },
-              {
-                value: "group",
-                label: t("wfModeGroup"),
-                icon: <UsersRound className="h-4 w-4" />,
-                desc: t("wfModeGroupDesc"),
-                count: `${handlers.length}`,
-              },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setMode(opt.value)}
-                className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-start transition-all ${
-                  mode === opt.value
-                    ? "bg-background shadow-sm ring-1 ring-border/60"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}>
-                <span
-                  className={`mt-0.5 shrink-0 transition-colors ${mode === opt.value ? "text-primary" : ""}`}>
-                  {opt.icon}
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-semibold leading-none">
-                      {opt.label}
-                    </span>
-                    {parseInt(opt.count) > 0 && (
-                      <span className="rounded-full bg-primary/10 px-1.5 py-0 text-[10px] font-bold text-primary leading-tight">
-                        {opt.count}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                    {opt.desc}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* ── Chain mode: step list */}
-          {mode === "chain" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+          {/* ── Chain steps */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   {t("wfChainStepsTitle")}
                 </p>
@@ -461,173 +398,120 @@ function WorkflowConfigModal({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {steps.map((step, idx) => (
+                  {steps.map((step, idx) => {
+                    const normalizedStepRole = (step.role || "").trim().toLowerCase();
+                    // Filter users to those whose roles include the typed role (or all non-staff if empty)
+                    const filteredUsers = users.filter((u) => {
+                      const uRoles = (u.roles || []).map((r) => r.toLowerCase());
+                      if (normalizedStepRole) {
+                        return uRoles.includes(normalizedStepRole);
+                      }
+                      return uRoles.some((r) => r !== "staff");
+                    });
+                    return (
                     <div
                       key={step.id}
-                      className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2 transition-colors hover:bg-muted/30">
-                      {/* Up/down reorder */}
-                      <div className="flex flex-col gap-0.5 shrink-0">
-                        <button
-                          type="button"
-                          title={t("wfMoveUp")}
-                          onClick={() => moveStep(idx, -1)}
-                          disabled={idx === 0}
-                          className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-colors">
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          title={t("wfMoveDown")}
-                          onClick={() => moveStep(idx, 1)}
-                          disabled={idx === steps.length - 1}
-                          className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-colors">
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 space-y-2 transition-colors hover:bg-muted/30">
+                      {/* ── Row 1: reorder | number | role input | badge | delete */}
+                      <div className="flex items-center gap-2">
+                        {/* Up/down reorder */}
+                        <div className="flex flex-col gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            title={t("wfMoveUp")}
+                            onClick={() => moveStep(idx, -1)}
+                            disabled={idx === 0}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-colors">
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            title={t("wfMoveDown")}
+                            onClick={() => moveStep(idx, 1)}
+                            disabled={idx === steps.length - 1}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-colors">
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
 
-                      {/* Step number badge */}
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                        {idx + 1}
-                      </span>
-
-                      {/* User select */}
-                      <select
-                        value={step.userId}
-                        onChange={(e) =>
-                          updateStep(step.id, "userId", e.target.value)
-                        }
-                        className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
-                        <option value="">{t("wfSelectUser")}</option>
-                        {users.map((u) => (
-                          <option key={u._id} value={u._id}>
-                            {u.personal_name} ({u.role})
-                          </option>
-                        ))}
-                      </select>
-
-                      {/* Auto-filled role pill */}
-                      {step.role && (
-                        <span className="shrink-0 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary whitespace-nowrap">
-                          {step.role}
+                        {/* Step number badge */}
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                          {idx + 1}
                         </span>
-                      )}
 
-                      {/* Remove */}
-                      <button
-                        type="button"
-                        onClick={() => removeStep(step.id)}
-                        className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        {/* Role name input */}
+                        <input
+                          type="text"
+                          value={step.role}
+                          onChange={(e) => updateStep(step.id, "role", e.target.value)}
+                          placeholder={t("wfRolePlaceholder")}
+                          list={`roles-${step.id}`}
+                          className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                        <datalist id={`roles-${step.id}`}>
+                          {["hod","avc","finance","dean","head_academic","it_staff","it_hod","public_relations","safety_officer","print_officer","admin"].map((r) => (
+                            <option key={r} value={r} />
+                          ))}
+                        </datalist>
+
+                        {/* Assignment mode badge */}
+                        {step.role && (
+                          <span
+                            className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold whitespace-nowrap ${
+                              step.userId
+                                ? "bg-amber-100 text-amber-700 border border-amber-200"
+                                : "bg-primary/10 text-primary border border-primary/20"
+                            }`}>
+                            {step.userId ? t("wfPinned") : t("wfAutoRole")}
+                          </span>
+                        )}
+
+                        {/* Remove */}
+                        <button
+                          type="button"
+                          onClick={() => removeStep(step.id)}
+                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* ── Row 2: pin to specific person (filtered by role) */}
+                      <div className="ps-8">
+                        <select
+                          value={step.userId}
+                          onChange={(e) => updateStep(step.id, "userId", e.target.value)}
+                          className="w-full rounded-lg border border-dashed border-border bg-background px-2.5 py-1.5 text-sm text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:text-foreground focus:border-solid">
+                          <option value="">{t("wfUserPinLabel")}</option>
+                          {filteredUsers.map((u) => (
+                            <option key={u._id} value={u._id}>
+                              {u.fullName || u.personal_name}
+                              {u.roles?.length ? ` (${u.roles.join(", ")})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addStep}
-                className="w-full border-dashed hover:border-primary/50 hover:text-primary">
-                <Plus className="h-3.5 w-3.5 me-1.5" />
-                {t("wfAddStep")}
-              </Button>
-            </div>
-          )}
-
-          {/* ── Group mode: handler pool */}
-          {mode === "group" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t("wfGroupTitle")}
+              {isSingleLevel && steps.length >= 1 ? (
+                <p className="text-center text-[11px] text-muted-foreground py-1">
+                  {lang === "ar" ? "هذا النوع يقبل موافقاً واحداً فقط" : "This type supports a single approver only"}
                 </p>
-                <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold text-violet-700">
-                  <RotateCcw className="h-3 w-3" />
-                  {t("wfGroupInfo")}
-                </span>
-              </div>
-
-              {handlers.length === 0 ? (
-                <div className="flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed border-border py-10 text-center bg-muted/10">
-                  <UsersRound className="h-8 w-8 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground max-w-[220px] leading-snug">
-                    {t("wfNoHandlers")}
-                  </p>
-                </div>
               ) : (
-                <div className="space-y-1.5">
-                  {handlers.map((h, idx) => (
-                    <div
-                      key={h.id}
-                      className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 transition-colors hover:bg-muted/30">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                        {h.handlerName?.[0]?.toUpperCase() || "?"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium leading-none">
-                          {h.handlerName}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {h.handlerRole}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        #{idx + 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeHandler(h.id)}
-                        className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addStep}
+                  className="w-full border-dashed hover:border-primary/50 hover:text-primary">
+                  <Plus className="h-3.5 w-3.5 me-1.5" />
+                  {t("wfAddStep")}
+                </Button>
               )}
-
-              {/* Add handler panel */}
-              <div className="rounded-xl border border-dashed border-border bg-muted/10 p-3 space-y-2">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder={t("wfSearchUsers")}
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className="pl-8 h-8 text-sm"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
-                    <option value="">{t("wfSelectUser")}</option>
-                    {filteredUsers
-                      .filter((u) => !handlers.some((h) => h.userId === u._id))
-                      .map((u) => (
-                        <option key={u._id} value={u._id}>
-                          {u.personal_name} ({u.role})
-                        </option>
-                      ))}
-                  </select>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={addHandler}
-                    disabled={!selectedUserId}
-                    className="shrink-0">
-                    <Plus className="h-3.5 w-3.5 me-1" />
-                    {t("wfAddHandler")}
-                  </Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  {t("wfRoundRobinNote")}
-                </p>
-              </div>
             </div>
-          )}
 
           {/* ── Live flow preview */}
           {hasPreview && (
@@ -644,33 +528,28 @@ function WorkflowConfigModal({
                   {t("wfFlowStart")}
                 </span>
 
-                {mode === "chain" &&
-                  steps
-                    .filter((s) => s.userId)
+                {steps
+                    .filter((s) => s.role)
                     .map((step, i) => {
                       const u = users.find((u) => u._id === step.userId);
                       return (
                         <React.Fragment key={step.id}>
                           <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1.5 text-[11px] font-semibold text-primary">
+                          <span className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                            step.userId
+                              ? "bg-amber-50 border-amber-200 text-amber-700"
+                              : "bg-primary/10 border-primary/20 text-primary"
+                          }`}>
                             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shrink-0">
                               {i + 1}
                             </span>
-                            {u?.personal_name || step.role || "?"}
+                            {step.userId
+                              ? (u?.fullName || u?.personal_name || step.role)
+                              : step.role}
                           </span>
                         </React.Fragment>
                       );
                     })}
-
-                {mode === "group" && handlers.length > 0 && (
-                  <>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="flex items-center gap-1.5 rounded-lg bg-violet-100 border border-violet-200 px-2.5 py-1.5 text-[11px] font-semibold text-violet-700">
-                      <UsersRound className="h-3.5 w-3.5 shrink-0" />
-                      {handlers.length}&nbsp;{t("wfHandlers")}
-                    </span>
-                  </>
-                )}
 
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1.5 text-[11px] font-semibold text-green-700">
@@ -783,7 +662,7 @@ function WorkflowCard({ meta, cfg, onConfigure, t }) {
             <div className="flex flex-wrap items-center gap-1.5">
               {approvalLevels
                 .slice()
-                .sort((a, b) => a.sequence_value - b.sequence_value)
+                .sort((a, b) => a.level - b.level)
                 .map((step, i) => (
                   <React.Fragment key={i}>
                     <div
@@ -791,7 +670,7 @@ function WorkflowCard({ meta, cfg, onConfigure, t }) {
                       <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/60 text-[9px] font-bold">
                         {i + 1}
                       </span>
-                      {step.approverId?.personal_name || step.role}
+                      {step.roleName}
                     </div>
                     {i < approvalLevels.length - 1 && (
                       <ArrowRight className="h-3 w-3 text-muted-foreground/60 shrink-0" />
@@ -876,14 +755,14 @@ const WorkflowDashboard = () => {
   const configuredCount = useMemo(
     () =>
       TYPE_META.filter(({ type }) => {
-        const cfg = workflows.find((w) => w.type === type);
+        const cfg = workflows.find((w) => w.requestType === type);
         const approvalLevels = cfg?.approvalLevels || cfg?.steps || [];
         const handlerGroup = cfg?.handlerGroup || cfg?.assignmentRules || [];
         return (
           cfg &&
-          (cfg.workflowType === "chain"
-            ? approvalLevels.length > 0
-            : handlerGroup.length > 0)
+          (cfg.workflowType === "group"
+            ? handlerGroup.length > 0
+            : approvalLevels.length > 0)
         );
       }).length,
     [workflows],
@@ -973,7 +852,7 @@ const WorkflowDashboard = () => {
             <WorkflowCard
               key={meta.type}
               meta={meta}
-              cfg={workflows.find((w) => w.type === meta.type)}
+              cfg={workflows.find((w) => w.requestType === meta.type)}
               onConfigure={openWorkflowModal}
               t={t}
             />

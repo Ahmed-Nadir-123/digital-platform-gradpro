@@ -22,7 +22,6 @@ import { FundRequest } from "./Models/FundRequest.js";
 import { InstallSoftwareRequest } from "./Models/InstallSoftwareRequest.js";
 import { PrintingRequest } from "./Models/PrintingRequest.js";
 import { RiskReport } from "./Models/RiskReport.js";
-import { MaintenanceRequest } from "./Models/MaintenanceRequest.js";
 import { RoleConfig } from "./Models/RoleConfig.js";
 
 const app = express();
@@ -245,6 +244,21 @@ const resolveApproverForRole = async ({
 const buildApprovalFlow = async (levels, requester, departmentRef, departmentName) => {
   const flow = [];
   for (const level of levels) {
+    // If admin pinned a specific approver, use them directly (skip role lookup)
+    if (level.approverId) {
+      const pinned = await User.findById(level.approverId).select("-password");
+      if (pinned && pinned.isActive !== false) {
+        flow.push({
+          approverId: pinned._id,
+          role: level.roleName,
+          action: "Pending",
+          comment: "",
+          timestamp: undefined,
+          currentApprover: pinned.fullName || "",
+        });
+        continue;
+      }
+    }
     const approver = await resolveApproverForRole({
       roleName: level.roleName,
       requester,
@@ -395,8 +409,6 @@ const ADMIN_REQUEST_MODELS = {
   PrintingRequest: PrintingRequest,
   risk_report: RiskReport,
   RiskReport: RiskReport,
-  maintenance: MaintenanceRequest,
-  MaintenanceRequest: MaintenanceRequest,
 };
 
 const ADMIN_REQUEST_LABELS = {
@@ -407,7 +419,6 @@ const ADMIN_REQUEST_LABELS = {
   install_software: "InstallSoftwareRequest",
   printing: "PrintingRequest",
   risk_report: "RiskReport",
-  maintenance: "MaintenanceRequest",
 };
 
 const MULTI_LEVEL_TYPES = ["purchase", "transportation", "food", "fund"];
@@ -722,7 +733,7 @@ app.get("/api/admin/workflow-settings", requireAuth, requireAdmin, async (req, r
 
 app.post("/api/admin/workflow-settings", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { requestType, workflowName, approvalLevels, isActive } = req.body;
+    const { requestType, workflowName, approvalLevels, isActive, workflowType, handlerGroup } = req.body;
     if (!requestType || !workflowName) {
       return res.status(400).json({ message: "requestType and workflowName are required." });
     }
@@ -731,6 +742,8 @@ app.post("/api/admin/workflow-settings", requireAuth, requireAdmin, async (req, 
       workflowName,
       approvalLevels: approvalLevels || [],
       isActive: isActive !== false,
+      workflowType: workflowType || "chain",
+      handlerGroup: handlerGroup || [],
     });
     res.status(201).json({ workflow });
   } catch (error) {
@@ -1499,12 +1512,20 @@ app.post("/api/printing", requireAuth, uploadPrinting.fields([{ name: "document"
   if (!resolved) return res.status(400).json({ message: "Requester not found." });
   const { requester, departmentRef, departmentName } = resolved;
 
-  const { handler } = await applyAssignmentRule({
-    serviceType: "printing",
-    requester,
-    departmentRef,
-    Model: PrintingRequest,
-  });
+  const workflow = await WorkflowSettings.findOne({ requestType: "printing", isActive: true });
+  if (!workflow || !workflow.approvalLevels?.length) {
+    return res.status(400).json({ message: "Printing workflow not configured. Please contact the admin." });
+  }
+  const printingLevels = [...workflow.approvalLevels].sort((a, b) => a.level - b.level);
+  let approvalFlow;
+  try {
+    approvalFlow = await buildApprovalFlow(printingLevels, requester, departmentRef, departmentName);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+  const firstApprover = approvalFlow[0]?.approverId
+    ? await User.findById(approvalFlow[0].approverId).select("-password")
+    : null;
 
   const requestNumber = await generateRequestNumber(SERVICE_PREFIX.printing);
   const requestDoc = await PrintingRequest.create({
@@ -1531,12 +1552,15 @@ app.post("/api/printing", requireAuth, uploadPrinting.fields([{ name: "document"
     recipientsListUrl: req.files?.["recipientsList"]?.[0] ? `uploads/printing/${req.files["recipientsList"][0].filename}` : "",
     recipientName,
     status: "pending",
-    assignedTo: handler?._id || null,
+    assignedTo: firstApprover?._id || null,
+    approvalFlow,
+    currentStep: 1,
+    assignedHandler: firstApprover?._id || null,
   });
 
-  if (handler) {
+  if (firstApprover) {
     await createNotification(
-      handler._id,
+      firstApprover._id,
       requestDoc,
       "printing",
       `New printing request assigned: ${requestNumber}`,
@@ -1597,12 +1621,20 @@ app.post("/api/risk-reports", requireAuth, async (req, res) => {
   if (!resolved) return res.status(400).json({ message: "Requester not found." });
   const { requester, departmentRef, departmentName } = resolved;
 
-  const { handler } = await applyAssignmentRule({
-    serviceType: "risk_report",
-    requester,
-    departmentRef,
-    Model: RiskReport,
-  });
+  const riskWorkflow = await WorkflowSettings.findOne({ requestType: "risk_report", isActive: true });
+  if (!riskWorkflow || !riskWorkflow.approvalLevels?.length) {
+    return res.status(400).json({ message: "Risk report workflow not configured. Please contact the admin." });
+  }
+  const riskLevels = [...riskWorkflow.approvalLevels].sort((a, b) => a.level - b.level);
+  let riskApprovalFlow;
+  try {
+    riskApprovalFlow = await buildApprovalFlow(riskLevels, requester, departmentRef, departmentName);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+  const riskFirstApprover = riskApprovalFlow[0]?.approverId
+    ? await User.findById(riskApprovalFlow[0].approverId).select("-password")
+    : null;
 
   const requestNumber = await generateRequestNumber(SERVICE_PREFIX.risk_report);
   const requestDoc = await RiskReport.create({
@@ -1620,12 +1652,15 @@ app.post("/api/risk-reports", requireAuth, async (req, res) => {
     likelihood,
     incidentDate,
     status: "pending",
-    assignedTo: handler?._id || null,
+    assignedTo: riskFirstApprover?._id || null,
+    approvalFlow: riskApprovalFlow,
+    currentStep: 1,
+    assignedHandler: riskFirstApprover?._id || null,
   });
 
-  if (handler) {
+  if (riskFirstApprover) {
     await createNotification(
-      handler._id,
+      riskFirstApprover._id,
       requestDoc,
       "risk_report",
       `New risk report assigned: ${requestNumber}`,
