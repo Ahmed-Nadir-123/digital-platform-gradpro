@@ -430,6 +430,7 @@ const Home = () => {
         );
 
       case "digital-requests":
+        if (isAdmin) return null;
         return (
           <div className="animate-in fade-in-0 duration-200">
             <DigitalRequests />
@@ -437,6 +438,7 @@ const Home = () => {
         );
 
       case "track-request":
+        if (isAdmin) return null;
         return (
           <div className="animate-in fade-in-0 duration-200">
             <TrackRequest highlightId={highlightRequestId} />
@@ -694,32 +696,7 @@ const Home = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {isAdmin && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "digital-requests"}
-                      onClick={() => {
-                        setActiveSection("digital-requests");
-                        setSidebarOpen(false);
-                      }}>
-                      <FileText className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{t("menuServices")}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {isAdmin && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "track-request"}
-                      onClick={() => {
-                        setActiveSection("track-request");
-                        setSidebarOpen(false);
-                      }}>
-                      <Search className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{t("menuTrackRequest")}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
+
               </SidebarMenu>
             </SidebarGroup>
 

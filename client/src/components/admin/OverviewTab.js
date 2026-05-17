@@ -65,6 +65,7 @@ const TYPE_META = {
 
 function getRequestTitle(req) {
   return (
+    req.itemDescription ||
     req.itemName ||
     req.destination ||
     req.occasionName ||

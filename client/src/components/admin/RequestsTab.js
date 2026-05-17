@@ -333,8 +333,8 @@ export function RequestDetailsModal({ request, onClose }) {
               <Detail
                 label={t("fldUrgency")}
                 value={
-                  <Badge variant={urgencyVariant(request.urgency)}>
-                    {request.urgency}
+                  <Badge variant={urgencyVariant(request.urgency || request.priority)}>
+                    {request.urgency || request.priority}
                   </Badge>
                 }
               />
@@ -356,18 +356,18 @@ export function RequestDetailsModal({ request, onClose }) {
               />
               <Detail
                 label={t("fldDepartment")}
-                value={request.requesterId?.department || "—"}
+                value={request.department || request.requesterId?.department || "—"}
               />
             </div>
 
             {/* Purchase-specific fields */}
             {request.requestType === "PurchaseRequest" && (
               <div className="grid grid-cols-2 gap-3">
-                <Detail label={t("fldItem")} value={request.itemName || request.items} />
+                <Detail label={t("fldItem")} value={request.itemDescription || request.itemName || request.items || "—"} />
                 <Detail label={t("fldQuantity")} value={request.quantity} />
                 <Detail
                   label={t("fldBudget")}
-                  value={request.estimatedBudget || "—"}
+                  value={request.estimatedCost || request.estimatedBudget || "—"}
                 />
                 {request.expectedDeliveryDate && (
                   <Detail
@@ -528,7 +528,7 @@ export function RequestDetailsModal({ request, onClose }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium text-foreground">
-                            {t("step")} {i + 1} — {step.role}
+                            {t("step")} {i + 1} — {step.role || step.approverRole}
                           </span>
                           <Badge
                             variant={
@@ -543,11 +543,11 @@ export function RequestDetailsModal({ request, onClose }) {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {step.currentApprover}
+                          {step.currentApprover || step.approverName}
                         </p>
-                        {step.comment && (
+                        {(step.comment || step.comments) && (
                           <p className="text-xs text-muted-foreground mt-1 italic">
-                            "{step.comment}"
+                            "{step.comment || step.comments}"
                           </p>
                         )}
                       </div>
