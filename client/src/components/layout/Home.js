@@ -22,6 +22,7 @@ import {
   Mail,
   Cloud,
   GraduationCap,
+  Award,
   LogOut,
   Menu,
   X,
@@ -204,6 +205,11 @@ const Home = () => {
       icon: <Mail className="h-4 w-4" />,
     },
     { label: "CIMS", url: "https://www.utas.edu.om/Colleges-Information-Management-System", icon: <GraduationCap className="h-4 w-4" /> },
+    {
+      label: "Bulk Creation",
+      url: "https://bulk-creation.vercel.app/",
+      icon: <Award className="h-4 w-4" />,
+    },
     {
       label: "OneDrive",
       url: "https://onedrive.live.com",
