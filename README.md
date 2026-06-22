@@ -21,7 +21,7 @@ A comprehensive digital platform and service request portal developed for the **
   - ⚠️ Risk Reports
 - **Dynamic Workflow Engine (Two Modes):**
   - *Chain Mode:* Sequential multi-level approvals.
-  - *Group Mode:* Round-robin automated delegation among handlers.
+  - *Single Mode:* Automated delegation to one handler.
 - **Role-Based Access Control (RBAC):**
   - *Employees:* Submit and track requests.
   - *IT Staff / Handlers:* Process specific departmental requests.
